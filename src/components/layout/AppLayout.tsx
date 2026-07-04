@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Building2, LayoutDashboard, LogOut, Menu, ShieldCheck, X } from 'lucide-react';
+import { Building2, LayoutDashboard, LogOut, Menu, Moon, ShieldCheck, Sun, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { loggedOut } from '@/features/auth/authSlice';
 import { Button } from '@/components/ui/button';
+import { useTheme } from '@/components/theme/useTheme';
 import { cn } from '@/lib/utils';
 
 const nav = [
@@ -52,6 +53,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 export function AppLayout() {
   const dispatch = useAppDispatch();
   const email = useAppSelector((s) => s.auth.email);
+  const { theme, toggle } = useTheme();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const location = useLocation();
 
@@ -119,8 +121,11 @@ export function AppLayout() {
             </Button>
             <p className="text-sm font-medium">Owner Console</p>
           </div>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-1">
             <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>
+            <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
+              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => dispatch(loggedOut())}>
               <LogOut className="mr-1 h-4 w-4" /> Sign out
             </Button>
