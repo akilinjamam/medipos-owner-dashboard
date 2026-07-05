@@ -5,6 +5,7 @@ import LoginPage from '@/pages/login/LoginPage';
 import OverviewPage from '@/pages/overview/OverviewPage';
 import TenantsPage from '@/pages/tenants/TenantsPage';
 import TenantDetailPage from '@/pages/tenants/TenantDetailPage';
+import UpgradeRequestsPage from '@/pages/requests/UpgradeRequestsPage';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const token = useAppSelector((s) => s.auth.token);
@@ -27,6 +28,7 @@ export default function App() {
         <Route index element={<OverviewPage />} />
         <Route path="tenants" element={<TenantsPage />} />
         <Route path="tenants/:id" element={<TenantDetailPage />} />
+        <Route path="requests" element={<UpgradeRequestsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

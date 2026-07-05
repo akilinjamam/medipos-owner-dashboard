@@ -1,11 +1,15 @@
 import { api } from './api';
 import type {
   AdminTenantListItem,
+  AdminUpgradeRequest,
   DataResponse,
   ListTenantsParams,
+  ListUpgradeRequestsParams,
   LoginResponse,
   Paginated,
+  Payment,
   PlatformStats,
+  RecordPaymentBody,
   Tenant,
   TenantDetail,
   UpdateSubscriptionBody,
@@ -44,6 +48,49 @@ export const adminApi = api.injectEndpoints({
       transformResponse: (res: DataResponse<Tenant>) => res.data,
       invalidatesTags: (_res, _err, { id }) => ['Tenants', 'Stats', { type: 'Tenant' as const, id }],
     }),
+
+    recordPayment: build.mutation<
+      { tenant: Tenant; payment: Payment },
+      { id: string; body: RecordPaymentBody }
+    >({
+      query: ({ id, body }) => ({
+        url: `/admin/tenants/${id}/payments`,
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (res: DataResponse<{ tenant: Tenant; payment: Payment }>) => res.data,
+      invalidatesTags: (_res, _err, { id }) => ['Tenants', 'Stats', { type: 'Tenant' as const, id }],
+    }),
+
+    listUpgradeRequests: build.query<Paginated<AdminUpgradeRequest>, ListUpgradeRequestsParams>({
+      query: (params) => ({ url: '/admin/upgrade-requests', params }),
+      providesTags: ['UpgradeRequests'],
+    }),
+
+    approveUpgradeRequest: build.mutation<
+      { request: AdminUpgradeRequest; tenant: Tenant },
+      { id: string; tenantId: string }
+    >({
+      query: ({ id }) => ({ url: `/admin/upgrade-requests/${id}/approve`, method: 'POST' }),
+      transformResponse: (res: DataResponse<{ request: AdminUpgradeRequest; tenant: Tenant }>) =>
+        res.data,
+      invalidatesTags: (_res, _err, { tenantId }) => [
+        'UpgradeRequests',
+        'Tenants',
+        'Stats',
+        { type: 'Tenant' as const, id: tenantId },
+      ],
+    }),
+
+    rejectUpgradeRequest: build.mutation<AdminUpgradeRequest, { id: string; reason?: string }>({
+      query: ({ id, reason }) => ({
+        url: `/admin/upgrade-requests/${id}/reject`,
+        method: 'POST',
+        body: reason ? { reason } : {},
+      }),
+      transformResponse: (res: DataResponse<AdminUpgradeRequest>) => res.data,
+      invalidatesTags: ['UpgradeRequests'],
+    }),
   }),
 });
 
@@ -53,4 +100,8 @@ export const {
   useListTenantsQuery,
   useGetTenantQuery,
   useUpdateSubscriptionMutation,
+  useRecordPaymentMutation,
+  useListUpgradeRequestsQuery,
+  useApproveUpgradeRequestMutation,
+  useRejectUpgradeRequestMutation,
 } = adminApi;

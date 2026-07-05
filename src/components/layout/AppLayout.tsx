@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Building2, LayoutDashboard, LogOut, Menu, Moon, ShieldCheck, Sun, X } from 'lucide-react';
+import { Building2, Inbox, LayoutDashboard, LogOut, Menu, Moon, ShieldCheck, Sun, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { loggedOut } from '@/features/auth/authSlice';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 const nav = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/tenants', label: 'Tenants', icon: Building2, end: false },
+  { to: '/requests', label: 'Upgrade requests', icon: Inbox, end: false },
 ];
 
 function Brand() {

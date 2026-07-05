@@ -17,6 +17,13 @@ export interface Paginated<T> {
 export type Plan = 'silver' | 'gold' | 'platinum';
 export type SubscriptionStatus = 'active' | 'past_due' | 'canceled' | 'trialing';
 
+/** Monthly list prices in BDT — mirrors the server's `subscription.config.ts`. */
+export const PLAN_PRICES: Record<Plan, number> = {
+  silver: 1000,
+  gold: 2500,
+  platinum: 5000,
+};
+
 export interface LoginResponse {
   accessToken: string;
   email: string;
@@ -76,7 +83,10 @@ export interface Payment {
   plan?: Plan;
   amount?: number;
   status: 'valid' | 'rejected';
+  /** Absent on rows written before the field existed — treat as 'gateway'. */
+  source?: 'gateway' | 'manual';
   reason?: string;
+  note?: string;
   createdAt: string;
 }
 
@@ -92,6 +102,37 @@ export interface UpdateSubscriptionBody {
   plan?: Plan;
   status?: SubscriptionStatus;
   expiresAt?: string;
+}
+
+/** POST /admin/tenants/:id/payments — record a manual payment + activate. */
+export interface RecordPaymentBody {
+  plan: Plan;
+  amount?: number;
+  reference?: string;
+  note?: string;
+}
+
+export type UpgradeRequestStatus = 'pending' | 'approved' | 'rejected';
+
+/** GET /admin/upgrade-requests — tenant-submitted TrxIDs awaiting verification. */
+export interface AdminUpgradeRequest {
+  id: string;
+  tenantId: string;
+  tenantName?: string;
+  tenantCode?: string;
+  plan: Plan;
+  amount: number;
+  method: 'bkash' | 'nagad';
+  trxId: string;
+  status: UpgradeRequestStatus;
+  note?: string;
+  createdAt: string;
+}
+
+export interface ListUpgradeRequestsParams {
+  page: number;
+  limit: number;
+  status?: UpgradeRequestStatus;
 }
 
 export interface PlatformStats {

@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, Ban, CalendarPlus, CheckCircle2, CreditCard } from 'lucide-react';
-import { useGetTenantQuery, useUpdateSubscriptionMutation } from '@/services/adminApi';
+import { ArrowLeft, Ban, Banknote, CalendarPlus, CheckCircle2, CreditCard } from 'lucide-react';
+import {
+  useGetTenantQuery,
+  useRecordPaymentMutation,
+  useUpdateSubscriptionMutation,
+} from '@/services/adminApi';
 import { getErrorMessage } from '@/lib/apiError';
 import { formatDate, formatMoney } from '@/lib/format';
 import { ExpiryBar } from '@/components/ExpiryBar';
@@ -28,9 +32,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { PLAN_PRICES } from '@/types/api';
 import type { Plan, UpdateSubscriptionBody } from '@/types/api';
 
-type Action = 'renew' | 'extend' | 'suspend' | 'reactivate' | null;
+type Action = 'record-payment' | 'renew' | 'extend' | 'suspend' | 'reactivate' | null;
 
 /** Default renewal expiry — one billing cycle from today, as a date-input value. */
 function nextMonthValue(): string {
@@ -43,10 +48,14 @@ export default function TenantDetailPage() {
   const { id = '' } = useParams();
   const { data, isLoading } = useGetTenantQuery(id, { skip: !id });
   const [updateSubscription, { isLoading: isSaving }] = useUpdateSubscriptionMutation();
+  const [recordPayment, { isLoading: isRecording }] = useRecordPaymentMutation();
 
   const [action, setAction] = useState<Action>(null);
   const [plan, setPlan] = useState<Plan>('silver');
   const [expiresAt, setExpiresAt] = useState(nextMonthValue());
+  const [amount, setAmount] = useState('');
+  const [reference, setReference] = useState('');
+  const [note, setNote] = useState('');
 
   if (isLoading || !data) {
     return (
@@ -62,6 +71,14 @@ export default function TenantDetailPage() {
   }
 
   const { tenant, owner, userCount, branchCount, payments } = data;
+
+  const openRecordPayment = () => {
+    setPlan(tenant.plan);
+    setAmount(String(PLAN_PRICES[tenant.plan]));
+    setReference('');
+    setNote('');
+    setAction('record-payment');
+  };
 
   const openRenew = () => {
     setPlan(tenant.plan);
@@ -81,6 +98,26 @@ export default function TenantDetailPage() {
       setAction(null);
     } catch (err) {
       toast.error(getErrorMessage(err, 'Update failed'));
+    }
+  };
+
+  const submitRecordPayment = async () => {
+    try {
+      const result = await recordPayment({
+        id: tenant.id,
+        body: {
+          plan,
+          amount: amount ? Number(amount) : undefined,
+          reference: reference.trim() || undefined,
+          note: note.trim() || undefined,
+        },
+      }).unwrap();
+      toast.success(
+        `Payment recorded — ${plan} active until ${formatDate(result.tenant.subscriptionExpiresAt)}`,
+      );
+      setAction(null);
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Could not record payment'));
     }
   };
 
@@ -113,7 +150,10 @@ export default function TenantDetailPage() {
               <span className="text-muted-foreground">Joined:</span> {formatDate(tenant.createdAt)}
             </p>
             <div className="flex flex-wrap gap-2 pt-2">
-              <Button size="sm" onClick={openRenew}>
+              <Button size="sm" onClick={openRecordPayment}>
+                <Banknote className="mr-1 h-4 w-4" /> Record payment
+              </Button>
+              <Button size="sm" variant="outline" onClick={openRenew}>
                 <CreditCard className="mr-1 h-4 w-4" /> Set plan / renew
               </Button>
               <Button size="sm" variant="outline" onClick={openExtend}>
@@ -189,14 +229,24 @@ export default function TenantDetailPage() {
               {payments.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
-                    No gateway payments recorded yet.
+                    No payments recorded yet.
                   </TableCell>
                 </TableRow>
               )}
               {payments.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>{formatDate(p.createdAt)}</TableCell>
-                  <TableCell className="font-mono text-xs">{p.tranId}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {p.tranId}
+                    {p.source === 'manual' && (
+                      <span
+                        className="ml-2 rounded bg-muted px-1.5 py-0.5 font-sans text-[10px] uppercase tracking-wide text-muted-foreground"
+                        title={p.note ?? undefined}
+                      >
+                        Manual
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell className="capitalize">{p.plan ?? '—'}</TableCell>
                   <TableCell className="text-right">{formatMoney(p.amount)}</TableCell>
                   <TableCell>
@@ -218,7 +268,77 @@ export default function TenantDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Set plan / renew — the manual-billing action: plan + active + new expiry. */}
+      {/* Record payment — THE manual-billing action: writes a Payment audit row
+          (so revenue stats stay truthful) AND activates the plan for one cycle. */}
+      <Dialog open={action === 'record-payment'} onOpenChange={(open) => !open && setAction(null)}>
+        <DialogHeader>
+          <DialogTitle>Record manual payment</DialogTitle>
+          <DialogDescription>
+            Use this after receiving money outside the gateway (bKash/Nagad/bank). Saves a payment
+            record and activates the plan for one month — extending from the current expiry if the
+            subscription is still active.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="pay-plan">Plan</Label>
+            <Select
+              id="pay-plan"
+              value={plan}
+              onChange={(e) => {
+                const next = e.target.value as Plan;
+                setPlan(next);
+                setAmount(String(PLAN_PRICES[next]));
+              }}
+            >
+              <option value="silver">Silver</option>
+              <option value="gold">Gold</option>
+              <option value="platinum">Platinum</option>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pay-amount">Amount received (BDT)</Label>
+            <Input
+              id="pay-amount"
+              type="number"
+              min="1"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pay-reference">Reference (optional)</Label>
+            <Input
+              id="pay-reference"
+              placeholder="bKash TrxID, bank slip no…"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pay-note">Note (optional)</Label>
+            <Input
+              id="pay-note"
+              placeholder="Paid by owner via personal bKash"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setAction(null)}>
+            Cancel
+          </Button>
+          <Button
+            disabled={isRecording || !amount || Number(amount) <= 0}
+            onClick={submitRecordPayment}
+          >
+            {isRecording ? 'Recording…' : 'Record & activate'}
+          </Button>
+        </DialogFooter>
+      </Dialog>
+
+      {/* Set plan / renew — correction tool: plan + active + new expiry, no payment row. */}
       <Dialog open={action === 'renew'} onOpenChange={(open) => !open && setAction(null)}>
         <DialogHeader>
           <DialogTitle>Set plan &amp; renew</DialogTitle>
