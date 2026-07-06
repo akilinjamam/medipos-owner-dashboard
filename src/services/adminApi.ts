@@ -6,6 +6,7 @@ import type {
   ListTenantsParams,
   ListUpgradeRequestsParams,
   LoginResponse,
+  MaintenanceState,
   Paginated,
   Payment,
   PlatformStats,
@@ -91,6 +92,18 @@ export const adminApi = api.injectEndpoints({
       transformResponse: (res: DataResponse<AdminUpgradeRequest>) => res.data,
       invalidatesTags: ['UpgradeRequests'],
     }),
+
+    maintenance: build.query<MaintenanceState, void>({
+      query: () => '/admin/settings/maintenance',
+      transformResponse: (res: DataResponse<MaintenanceState>) => res.data,
+      providesTags: ['Maintenance'],
+    }),
+
+    setMaintenance: build.mutation<MaintenanceState, MaintenanceState>({
+      query: (body) => ({ url: '/admin/settings/maintenance', method: 'PATCH', body }),
+      transformResponse: (res: DataResponse<MaintenanceState>) => res.data,
+      invalidatesTags: ['Maintenance'],
+    }),
   }),
 });
 
@@ -104,4 +117,6 @@ export const {
   useListUpgradeRequestsQuery,
   useApproveUpgradeRequestMutation,
   useRejectUpgradeRequestMutation,
+  useMaintenanceQuery,
+  useSetMaintenanceMutation,
 } = adminApi;

@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { loggedIn } from '@/features/auth/authSlice';
 import { useLoginMutation } from '@/services/adminApi';
 import { getErrorMessage } from '@/lib/apiError';
+import { copyrightLine, PRODUCT_NAME } from '@/lib/company';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -46,12 +47,13 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <ShieldCheck className="mx-auto mb-2 h-8 w-8 text-primary" />
-          <CardTitle>Owner Console</CardTitle>
-          <CardDescription>Platform administration — authorized access only</CardDescription>
-        </CardHeader>
+      <div className="w-full max-w-sm">
+        <Card>
+          <CardHeader className="text-center">
+            <ShieldCheck className="mx-auto mb-2 h-8 w-8 text-primary" />
+            <CardTitle>{PRODUCT_NAME} Owner Console</CardTitle>
+            <CardDescription>Platform administration — authorized access only</CardDescription>
+          </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-1.5">
@@ -76,7 +78,10 @@ export default function LoginPage() {
             </Button>
           </form>
         </CardContent>
-      </Card>
+        </Card>
+
+        <p className="mt-6 text-center text-xs text-muted-foreground/70">{copyrightLine()}</p>
+      </div>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { usePlatformStatsQuery } from '@/services/adminApi';
 import { formatMoney } from '@/lib/format';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { MaintenanceCard } from '@/components/MaintenanceCard';
 
 export default function OverviewPage() {
   const { data, isLoading } = usePlatformStatsQuery();
@@ -51,6 +52,8 @@ export default function OverviewPage() {
           Platform health at a glance. Revenue comes from gateway-validated payments.
         </p>
       </div>
+
+      <MaintenanceCard />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map(({ label, value, icon: Icon }) => (

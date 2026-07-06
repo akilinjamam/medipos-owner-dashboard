@@ -6,6 +6,7 @@ import { loggedOut } from '@/features/auth/authSlice';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/theme/useTheme';
 import { cn } from '@/lib/utils';
+import { copyrightLine } from '@/lib/company';
 
 const nav = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -78,6 +79,7 @@ export function AppLayout() {
           <Brand />
         </div>
         <NavLinks />
+        <p className="p-4 text-xs text-muted-foreground/70">{copyrightLine()}</p>
       </aside>
 
       {/* Mobile nav drawer */}

@@ -39,6 +39,6 @@ const baseQueryWithLogout: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithLogout,
-  tagTypes: ['Stats', 'Tenants', 'Tenant', 'UpgradeRequests'],
+  tagTypes: ['Stats', 'Tenants', 'Tenant', 'UpgradeRequests', 'Maintenance'],
   endpoints: () => ({}),
 });

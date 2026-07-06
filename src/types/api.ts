@@ -135,6 +135,12 @@ export interface ListUpgradeRequestsParams {
   status?: UpgradeRequestStatus;
 }
 
+/** GET/PATCH /admin/settings/maintenance — the platform maintenance switch. */
+export interface MaintenanceState {
+  enabled: boolean;
+  message?: string;
+}
+
 export interface PlatformStats {
   tenantsByStatus: Partial<Record<SubscriptionStatus, number>>;
   tenantsByPlan: Partial<Record<Plan, number>>;
